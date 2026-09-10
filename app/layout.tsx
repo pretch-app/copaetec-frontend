@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Oswald } from "next/font/google"
 import { Suspense } from "react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { ChatWidget } from "@/components/chatbot/chat-widget"
 import { Toaster } from "sonner"
 import "./globals.css"
 
@@ -85,6 +86,7 @@ export default function RootLayout({
             <Analytics />
           </Suspense>
         )}
+        <ChatWidget />
         <Toaster position="bottom-right" richColors />
       </body>
     </html>
