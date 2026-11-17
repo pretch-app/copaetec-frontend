@@ -12,6 +12,8 @@ vi.mock("next/navigation", () => ({
 
 import LoginPage from "./login/page"
 import RegisterPage from "./registro/page"
+import ForgotPasswordPage from "./olvide/page"
+import ResetPasswordPage from "./restablecer/page"
 
 const API = "http://localhost:4000/api/auth"
 
@@ -122,5 +124,70 @@ describe("Registro", () => {
     render(<RegisterPage />)
     fillForm()
     expect(await screen.findByRole("alert")).toHaveTextContent(/correos institucionales/i)
+  })
+})
+
+describe("Olvidé mi contraseña", () => {
+  it("el login ofrece recuperar la contraseña y avisa cuando se cambió", () => {
+    nav.params = new URLSearchParams("reset=1")
+    render(<LoginPage />)
+    expect(screen.getByRole("link", { name: /olvidaste tu contraseña/i })).toHaveAttribute("href", "/auth/olvide")
+    expect(screen.getByRole("status")).toHaveTextContent(/contraseña nueva/i)
+  })
+
+  it("pide el link por email y muestra el mismo aviso exista o no la cuenta", async () => {
+    let sentTo = ""
+    server.use(
+      http.post(`${API}/forgot-password`, async ({ request }) => {
+        sentTo = ((await request.json()) as { email: string }).email
+        return HttpResponse.json({ success: true })
+      }),
+    )
+    render(<ForgotPasswordPage />)
+    fill(/^email$/i, "ana@alumno.etec.um.edu.ar")
+    fireEvent.click(screen.getByRole("button", { name: /enviar link/i }))
+
+    expect(await screen.findByRole("heading", { name: /revisá tu correo/i })).toBeInTheDocument()
+    expect(sentTo).toBe("ana@alumno.etec.um.edu.ar")
+  })
+
+  it("guarda la contraseña nueva con el token del link y vuelve al login", async () => {
+    let body: Record<string, string> = {}
+    server.use(
+      http.post(`${API}/reset-password`, async ({ request }) => {
+        body = (await request.json()) as Record<string, string>
+        return HttpResponse.json({ success: true })
+      }),
+    )
+    nav.params = new URLSearchParams("token=token-del-correo")
+    render(<ResetPasswordPage />)
+    fill(/^contraseña nueva$/i, "nueva-clave")
+    fill(/repetir contraseña/i, "nueva-clave")
+    fireEvent.click(screen.getByRole("button", { name: /guardar contraseña/i }))
+
+    await vi.waitFor(() => expect(nav.push).toHaveBeenCalledWith("/auth/login?reset=1"))
+    expect(body).toEqual({ token: "token-del-correo", password: "nueva-clave", confirmPassword: "nueva-clave" })
+  })
+
+  it("si el link venció, ofrece pedir uno nuevo", async () => {
+    server.use(
+      http.post(`${API}/reset-password`, () =>
+        HttpResponse.json({ error: "El link venció o ya se usó. Pedí uno nuevo.", code: "INVALID_RESET_TOKEN" }, { status: 400 }),
+      ),
+    )
+    nav.params = new URLSearchParams("token=viejo")
+    render(<ResetPasswordPage />)
+    fill(/^contraseña nueva$/i, "nueva-clave")
+    fill(/repetir contraseña/i, "nueva-clave")
+    fireEvent.click(screen.getByRole("button", { name: /guardar contraseña/i }))
+
+    expect(await screen.findByRole("link", { name: /pedir un link nuevo/i })).toHaveAttribute("href", "/auth/olvide")
+    expect(nav.push).not.toHaveBeenCalled()
+  })
+
+  it("sin token en el link no muestra el formulario", () => {
+    render(<ResetPasswordPage />)
+    expect(screen.queryByRole("button", { name: /guardar contraseña/i })).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /pedir un link nuevo/i })).toBeInTheDocument()
   })
 })

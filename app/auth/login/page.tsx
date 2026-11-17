@@ -15,6 +15,9 @@ function messageFromParams(params: URLSearchParams): { kind: "success" | "error"
   if (params.get("verified") === "1") {
     return { kind: "success", text: "¡Cuenta activada! Ya podés iniciar sesión." }
   }
+  if (params.get("reset") === "1") {
+    return { kind: "success", text: "Listo, ya podés entrar con tu contraseña nueva." }
+  }
   const error = params.get("error")
   if (!error) return null
   if (error === "InvalidVerificationToken") {
@@ -122,6 +125,12 @@ function LoginContent() {
                 placeholder="Contraseña"
                 aria-label="Contraseña"
               />
+            </div>
+
+            <div className="text-right">
+              <Link href="/auth/olvide" className="text-xs font-medium text-primary hover:underline">
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
 
             {error && (
