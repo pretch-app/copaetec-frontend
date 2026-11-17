@@ -2,7 +2,10 @@
 
 import { apiUrl } from "./api"
 
-export type ApiResult<T = unknown> = { ok: true; data: T } | { ok: false; error: string; status: number }
+/** `code` es el código de error que manda el backend, por ejemplo `EMAIL_NOT_VERIFIED`. */
+export type ApiResult<T = unknown> =
+  | { ok: true; data: T }
+  | { ok: false; error: string; status: number; code?: string }
 export const AUTH_STATE_CHANGED_EVENT = "auth-state-changed"
 
 export function notifyAuthStateChanged() {
@@ -35,7 +38,12 @@ export async function apiClient<T = unknown>(
     const data = contentType.includes("application/json") ? await res.json() : null
 
     if (!res.ok) {
-      return { ok: false, error: (data && data.error) || `Error ${res.status}`, status: res.status }
+      return {
+        ok: false,
+        error: (data && data.error) || `Error ${res.status}`,
+        status: res.status,
+        code: data && typeof data.code === "string" ? data.code : undefined,
+      }
     }
     return { ok: true, data: data as T }
   } catch (err) {
