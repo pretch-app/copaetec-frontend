@@ -21,3 +21,6 @@ Thumbs.db
 
 # Generated technical documentation
 docs/generated/
+
+# Reporte de cobertura de tests
+coverage/

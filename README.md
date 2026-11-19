@@ -71,6 +71,15 @@ https://tu-backend.example.com/api/auth/callback/google
 
 El frontend usa `package-lock.json` como lockfile oficial; Vercel instalará las dependencias con npm.
 
+## Tests y cobertura
+
+```bash
+npm test                # todos los tests
+npm run test:coverage   # tests + cobertura (reporte en coverage/)
+```
+
+Los tests usan Vitest, Testing Library y MSW para simular el backend (`test/fixtures.ts`). En cada PR, el CI corre `npm run test:coverage` y falla si la cobertura baja del 60% en líneas, sentencias, funciones o ramas. El reporte queda como artifact `coverage-report`. Quedan fuera de la medición los componentes generados de shadcn/ui (`components/ui`) y las escenas 3D con three.js, que necesitan WebGL.
+
 ## Desarrollo
 
 Puedes editar `app/page.tsx`; el servidor de desarrollo actualiza los cambios automáticamente.
